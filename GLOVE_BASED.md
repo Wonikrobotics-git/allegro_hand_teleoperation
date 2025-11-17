@@ -329,10 +329,10 @@ Record hand motions with specified parameters:
 
 ```bash
 # Right hand example
-python glove_based/geort_data_logger.py --name avery --handness right --duration 60 --hz 30
+python glove_based/geort_data_logger.py --name human1 --handness right --duration 60 --hz 30
 
 # Left hand example
-python glove_based/geort_data_logger.py --name avery --handness left --duration 60 --hz 30
+python glove_based/geort_data_logger.py --name human1 --handness left --duration 60 --hz 30
 ```
 
 **Parameters:**
@@ -436,7 +436,7 @@ python glove_based/geort/trainer.py \
 ```bash
 python glove_based/geort/trainer.py \
     -hand allegro_right \
-    -human_data avery_right_1117_105023.npy \
+    -human_data human1_right_1117_105023.npy \
     -ckpt_tag "experiment_v1" \
     --w_chamfer 80.0 \
     --w_curvature 0.1 \

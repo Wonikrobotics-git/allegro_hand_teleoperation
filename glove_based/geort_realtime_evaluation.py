@@ -18,7 +18,7 @@ from geort.env.hand import HandKinematicModel
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-hand',    type=str, default='allegro')
-    parser.add_argument('-ckpt_tag', type=str, default='alex')
+    parser.add_argument('-ckpt_tag', type=str, default='human1')
     args = parser.parse_args()
 
     # ROS2 init & mocap node

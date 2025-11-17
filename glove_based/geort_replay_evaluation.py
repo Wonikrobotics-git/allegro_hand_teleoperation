@@ -6,7 +6,7 @@ import argparse
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-hand', type=str, default='allegro')
-    parser.add_argument('-ckpt_tag', type=str, default='alex')
+    parser.add_argument('-ckpt_tag', type=str, default='human1')
     parser.add_argument('-data', type=str, default='human')
 
     args = parser.parse_args()
