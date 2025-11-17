@@ -17,8 +17,8 @@ from geort.env.hand import HandKinematicModel
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-hand',    type=str, default='allegro')
-    parser.add_argument('-ckpt_tag', type=str, default='human1')
+    parser.add_argument('--hand', type=str, default='allegro')
+    parser.add_argument('--ckpt', type=str)
     args = parser.parse_args()
 
     # ROS2 init & mocap node
@@ -31,7 +31,7 @@ def main():
     spin_thread.start()
 
     # GeoRT model & hand simulator
-    model = load_model(args.ckpt_tag)
+    model = load_model(args.ckpt)
     config = get_config(args.hand)
     hand = HandKinematicModel.build_from_config(config, render=True)
     viewer_env = hand.get_viewer_env()

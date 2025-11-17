@@ -5,14 +5,14 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-hand', type=str, default='allegro')
-    parser.add_argument('-ckpt_tag', type=str, default='human1')
-    parser.add_argument('-data', type=str, default='human')
+    parser.add_argument('--hand', type=str, default='allegro')
+    parser.add_argument('--ckpt', type=str)
+    parser.add_argument('--data', type=str, default='human')
 
     args = parser.parse_args()
 
     # GeoRT Model.
-    model = load_model(args.ckpt_tag)
+    model = load_model(args.ckpt)
 
     # Motion Capture.
     mocap = ReplayMocap(args.data)

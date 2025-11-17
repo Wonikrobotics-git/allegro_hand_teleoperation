@@ -172,13 +172,13 @@ def main():
         epilog='''
 Example:
   # Deploy both hands with trained checkpoints
-  %(prog)s -right_ckpt "human1_right_1028_150817_allegro_right_last" \\
-           -left_ckpt "human1_left_1028_150817_allegro_left_last"
+  %(prog)s --right_ckpt "human1_right_1028_150817_allegro_right_last" \\
+           --left_ckpt "human1_left_1028_150817_allegro_left_last"
         ''')
 
-    parser.add_argument('-right_ckpt', type=str, required=True,
+    parser.add_argument('--right_ckpt', type=str, required=True,
                         help="Checkpoint tag for right hand model")
-    parser.add_argument('-left_ckpt', type=str, required=True,
+    parser.add_argument('--left_ckpt', type=str, required=True,
                         help="Checkpoint tag for left hand model")
     parser.add_argument('--loop_hz', type=float, default=100.0,
                         help="Control loop frequency in Hz (default: 100.0)")

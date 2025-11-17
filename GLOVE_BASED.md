@@ -289,10 +289,10 @@ Learning-based approach using GeoRT (Geometric Retargeting) for improved accurac
 
 ```bash
 # Create conda environment
-conda create -n geort_test python=3.10
+conda create -n geort python=3.10
 
 # Activate environment
-conda activate geort_test
+conda activate geort
 
 # Install dependencies
 pip install -r glove_based/geort_requirements.txt
@@ -319,7 +319,7 @@ ros2 run manus_ros2 manus_data_publisher
 Convert raw glove data to 21-joint skeleton format compatible with GeoRT:
 
 ```bash
-conda activate geort_test
+conda activate geort
 python glove_based/manus_skeleton_21.py
 ```
 
@@ -349,21 +349,18 @@ python glove_based/geort_data_logger.py --name human1 --handness left --duration
 
 Generate robot kinematics dataset for the Allegro hand configuration.
 
-> **Note:** Thanks to path fixes, commands work from any directory!
-
-**Quick Start**
 
 ```bash
-conda activate geort_test
+conda activate geort
 
 # Generate and save dataset (default)
 python glove_based/geort/generate_robot_data.py --hand allegro_left
 
 # Visualize only (quick test, no dataset)
-python glove_based/geort/generate_robot_data.py --hand allegro_left -v
+python glove_based/geort/generate_robot_data.py --hand allegro_left --viz
 
 # Preview mode (generate small dataset + visualize, no save)
-python glove_based/geort/generate_robot_data.py --hand allegro_left -n 100 --no-save
+python glove_based/geort/generate_robot_data.py --hand allegro_left --num-samples 100 --no-save
 ```
 
 **Common Usage Patterns**
@@ -371,43 +368,33 @@ python glove_based/geort/generate_robot_data.py --hand allegro_left -n 100 --no-
 | Command | Description | Generates | Saves | Visualizes |
 |---------|-------------|-----------|-------|------------|
 | `--hand allegro_left` | Standard generation | 1M samples | ✅ | ❌ |
-| `--hand allegro_left -v` | Visualization only | - | ❌ | ✅ 100 configs |
-| `--hand allegro_left -n 100 --no-save` | Preview mode | 100 samples | ❌ | ✅ 100 configs |
-| `--hand allegro_left -n 50000 -v --save` | Generate + visualize | 50K samples | ✅ | ✅ 100 configs |
+| `--hand allegro_left --viz` | Visualization only | - | ❌ | ✅ 100 configs |
+| `--hand allegro_left --num-samples 100 --no-save` | Preview mode | 100 samples | ❌ | ✅ 100 configs |
+| `--hand allegro_left --num-samples 50000 --viz --save` | Generate + visualize | 50K samples | ✅ | ✅ 100 configs |
 
 **Compact Command Options**
 
 ```bash
 # Full example with all options
 python glove_based/geort/generate_robot_data.py \
-    --hand allegro_right \     # or -H (hand configuration)
-    -n 100000 \                # number of samples
-    -v \                       # enable visualization
-    --save \                   # save dataset (with -v)
-    -i 0.15                    # visualization interval (seconds)
+    --hand allegro_right \        # hand configuration
+    --num-samples 100000 \        # number of samples
+    --viz \                       # enable visualization
+    --save \                      # save dataset (with --viz)
+    --interval 0.15               # visualization interval (seconds)
 ```
 
 **Parameters:**
 
-| Option | Short | Description | Default |
-|--------|-------|-------------|---------|
-| `--hand` | `-H` | Hand config (`allegro_left` or `allegro_right`) | `allegro_right` |
-| `--num-samples` | `-n` | Number of samples | 1M (generate) / 100 (viz) |
-| `--viz` | `-v` | Enable visualization | `False` |
-| `--save` | - | Save dataset (use with `-v`) | Auto |
-| `--no-save` | - | Don't save (implies `-v`) | `False` |
-| `--interval` | `-i` | Viz interval in seconds | `0.1` |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--hand` | Hand config (`allegro_left` or `allegro_right`) | `allegro_right` |
+| `--num-samples` | Number of samples | 1M (generate) / 100 (viz) |
+| `--viz` | Enable visualization | `False` |
+| `--save` | Save dataset (use with `--viz`) | Auto |
+| `--no-save` | Don't save (implies `--viz`) | `False` |
+| `--interval` | Viz interval in seconds | `0.1` |
 
-**Visualization Features:**
-- Press **Ctrl+C** to stop early
-- Progress every 10 configurations
-- Smooth transitions between poses
-
-**Use Cases:**
-- ✅ Verify joint limits
-- ✅ Check for self-collisions
-- ✅ Understand workspace
-- ✅ Debug kinematics
 
 **Output:** `glove_based/data/allegro_{left|right}.npz`
 
@@ -422,22 +409,22 @@ Train the geometric retargeting model using logged human data.
 ```bash
 # Right hand
 python glove_based/geort/trainer.py \
-    -hand allegro_right \
-    -human_data human1_right_1028_150817.npy
+    --hand allegro_right \
+    --human_data human1_right_1028_150817.npy
 
 # Left hand
 python glove_based/geort/trainer.py \
-    -hand allegro_left \
-    -human_data human1_left_1028_150409.npy
+    --hand allegro_left \
+    --human_data human1_left_1028_150409.npy
 ```
 
 **Advanced Training**
 
 ```bash
 python glove_based/geort/trainer.py \
-    -hand allegro_right \
-    -human_data human1_right_1117_105023.npy \
-    -ckpt_tag "experiment_v1" \
+    --hand allegro_right \
+    --human_data human1_right_1117_105023.npy \
+    --ckpt_tag "experiment_v1" \
     --w_chamfer 80.0 \
     --w_curvature 0.1 \
     --w_pinch 1.0 \
@@ -448,8 +435,8 @@ python glove_based/geort/trainer.py \
 **Training Parameters:**
 
 *Required:*
-- `-hand`: Robot hand config (`allegro_left` or `allegro_right`)
-- `-human_data`: Human data filename (in `glove_based/data/`)
+- `--hand`: Robot hand config (`allegro_left` or `allegro_right`)
+- `--human_data`: Human data filename (in `glove_based/data/`)
 
 *Optional Loss Weights:*
 - `--w_chamfer`: Chamfer loss weight (default: 80.0)
@@ -461,7 +448,7 @@ python glove_based/geort/trainer.py \
 - `--wandb_project`: Project name (default: `geort`)
 - `--wandb_entity`: Username/team (optional)
 - `--no_wandb`: Disable wandb logging
-- `-ckpt_tag`: Checkpoint tag (default: `''`)
+- `--ckpt_tag`: Checkpoint tag (default: `''`)
 
 **Output:**
 - Checkpoints: `glove_based/checkpoint/allegro_{left|right}_{timestamp}_{tag}/`
@@ -479,18 +466,18 @@ Test trained model with pre-recorded human hand data in Sapien simulator.
 
 ```bash
 python glove_based/geort_replay_evaluation.py \
-    -ckpt_tag "human1_right_1028_150817_allegro_right_last" \
-    -hand allegro_right \
-    -data human1_right_1028_150817.npy
+    --ckpt "human1_right_1028_150817_allegro_right_last" \
+    --hand allegro_right \
+    --data human1_right_1028_150817.npy
 ```
 
 **Left Hand**
 
 ```bash
 python glove_based/geort_replay_evaluation.py \
-    -ckpt_tag "human1_left_1028_150409_allegro_left_last" \
-    -hand allegro_left \
-    -data human1_left_1028_150409.npy
+    --ckpt "human1_left_1028_150409_allegro_left_last" \
+    --hand allegro_left \
+    --data human1_left_1028_150409.npy
 ```
 
 ---
@@ -513,15 +500,15 @@ python glove_based/manus_skeleton_21.py
 
 ```bash
 # Terminal 3: Right hand
-conda activate geort_test
+conda activate geort
 python glove_based/geort_realtime_evaluation.py \
-    -ckpt_tag "human1_right_1028_150817_allegro_right_last" \
-    -hand allegro_right
+    --ckpt "human1_right_1028_150817_allegro_right_last" \
+    --hand allegro_right
 
 # OR Left hand
 python glove_based/geort_realtime_evaluation.py \
-    -ckpt_tag "human1_left_1028_150409_allegro_left_last" \
-    -hand allegro_left
+    --ckpt "human1_left_1028_150409_allegro_left_last" \
+    --hand allegro_left
 ```
 
 ---
@@ -549,7 +536,7 @@ The deployment pipeline consists of:
 ros2 run manus_ros2 manus_data_publisher
 
 # Terminal 2: Preprocess glove data
-conda activate geort_test
+conda activate geort
 python glove_based/manus_skeleton_21.py
 
 # Terminal 3: Launch Allegro hand controller
@@ -563,8 +550,8 @@ ros2 launch allegro_hand_bringup allegro_hand_duo.launch.py
 ```bash
 # Terminal 4: Load Both Hand Checkpoints
 python glove_based/geort_allegro_deploy.py \
-      -right_ckpt "human1_right_1028_150817_allegro_right_last" \
-      -left_ckpt "human1_left_1028_150409_allegro_left_last"
+      --right_ckpt "human1_right_1028_150817_allegro_right_last" \
+      --left_ckpt "human1_left_1028_150409_allegro_left_last"
 ```
 
 **Post-Processing Notes**
@@ -579,6 +566,6 @@ The `GeortAllegroDeployer` includes a `post_processing_commands()` function that
 
 | Argument | Description | Required |
 |----------|-------------|----------|
-| `-right_ckpt` | Checkpoint tag for right hand model | Yes |
-| `-left_ckpt` | Checkpoint tag for left hand model | Yes |
+| `--right_ckpt` | Checkpoint tag for right hand model | Yes |
+| `--left_ckpt` | Checkpoint tag for left hand model | Yes |
 | `--loop_hz` | Control loop frequency in Hz | No (default: 100.0) |

@@ -174,26 +174,26 @@ Examples:
   %(prog)s --hand allegro_left
 
   # Visualize only (no dataset generation)
-  %(prog)s --hand allegro_left -v
+  %(prog)s --hand allegro_left --viz
 
   # Preview mode: generate small dataset and visualize
-  %(prog)s --hand allegro_left -n 100 --no-save
+  %(prog)s --hand allegro_left --num-samples 100 --no-save
 
   # Generate large dataset with visualization
-  %(prog)s --hand allegro_left -n 100000 -v --save
+  %(prog)s --hand allegro_left --num-samples 100000 --viz --save
         ''')
 
-    parser.add_argument('--hand', '-H', type=str, default='allegro_right',
+    parser.add_argument('--hand', type=str, default='allegro_right',
                         help="hand configuration (allegro_left or allegro_right)")
-    parser.add_argument('-n', '--num-samples', type=int, default=None,
+    parser.add_argument('--num-samples', type=int, default=None,
                         help="number of samples (default: 1000000 for generation, 100 for viz-only)")
-    parser.add_argument('-v', '--viz', action='store_true',
+    parser.add_argument('--viz', action='store_true',
                         help="enable visualization mode")
     parser.add_argument('--save', action='store_true',
-                        help="save dataset (use with -v to visualize after saving)")
+                        help="save dataset (use with --viz to visualize after saving)")
     parser.add_argument('--no-save', action='store_true',
-                        help="don't save dataset (implies -v for preview mode)")
-    parser.add_argument('-i', '--interval', type=float, default=0.1,
+                        help="don't save dataset (implies --viz for preview mode)")
+    parser.add_argument('--interval', type=float, default=0.1,
                         help="visualization interval in seconds (default: 0.1)")
     args = parser.parse_args()
 

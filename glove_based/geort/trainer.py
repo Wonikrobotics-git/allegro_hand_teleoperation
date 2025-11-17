@@ -665,11 +665,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train GeoRT retargeting model')
 
     # Required arguments
-    parser.add_argument('-hand', type=str, default='allegro',
+    parser.add_argument('--hand', type=str, default='allegro',
                        help='Hand configuration name')
-    parser.add_argument('-human_data', type=str, default='human',
+    parser.add_argument('--human_data', type=str, default='human',
                        help='Human mocap data filename')
-    parser.add_argument('-ckpt_tag', type=str, default='',
+    parser.add_argument('--ckpt_tag', type=str, default='',
                        help='Checkpoint tag for experiment naming')
 
     # Loss weights
