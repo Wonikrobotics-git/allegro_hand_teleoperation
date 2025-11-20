@@ -265,6 +265,31 @@ The retargeting process consists of 6 steps:
 
 Learning-based approach using GeoRT (Geometric Retargeting) for improved accuracy through data-driven mapping.
 
+### Recent Updates
+
+**v2.1 - Controller Management Unification (2025-01)**
+- ✅ **Unified controller management**: Both single and dual deployments now use `AllegroCommandForwarder`
+- ✅ **Automatic controller activation**: Controllers are automatically activated via `controller_manager` on startup
+- ✅ **Safe shutdown**: Automatic return to safe base position on node termination
+- ✅ **Simplified configuration**: Single `two_robots` parameter distinguishes between single/dual robot setups
+- ✅ **Removed redundancy**: Eliminated `--controller_topic` parameter in favor of automatic topic management
+
+**v2.0 - Unified Deployment Architecture (2025-01)**
+- ✅ **Simplified deployment scripts**: Merged `geort_allegro_deploy_v2.py` into `geort_allegro_deploy.py`
+- ✅ **Code reuse**: `geort_allegro_deploy_single.py` now imports from `geort_allegro_deploy.py` (no code duplication)
+- ✅ **Streamlined smoothing**: Single-stage EMA based on previous command (removed dual-stage approach)
+- ✅ **Configurable smoothing**: Added `--smoothing_alpha` parameter (default: 0.9) for both single and dual deployments
+- ✅ **Consistent API**: Both single and dual deployment use the same `GeortAllegroDeployer` class
+- ✅ **Improved docs**: Added explicit smoothing mechanism explanation with formula
+
+**Breaking Changes:**
+- `geort_allegro_deploy_single.py` now requires `--side` parameter (left/right)
+- Default mocap topic changed from `/manus_poses` to `/manus_poses_{side}` for single deployment
+- Default smoothing_alpha changed from 0.5 to 0.9 for consistency
+- Removed `--controller_topic` parameter (now managed automatically by `AllegroCommandForwarder`)
+
+---
+
 ### Workflow
 
 1. **Setup Environment** - Create conda environment with required dependencies
@@ -342,6 +367,10 @@ python glove_based/geort_data_logger.py --name human1 --handness left --duration
 - `--hz`: Target frame rate (default: 30)
 
 **Output:** Data saved to `glove_based/data/{name}_{handness}_{timestamp}.npy`
+
+<p align="center">
+  <img src="./materials/data_logger.gif" width="60%"/>
+</p>
 
 ---
 
@@ -523,7 +552,7 @@ python glove_based/geort_realtime_evaluation.py \
 
 #### 4.3 Real Hardware Deployment
 
-Deploy trained model to physical Allegro hands using the `GeortAllegroDeployer` ROS2 node.
+Deploy trained model to physical Allegro hands using GeoRT deployer ROS2 nodes.
 
 **Architecture Overview**
 
@@ -531,11 +560,28 @@ The deployment pipeline consists of:
 1. **Manus Mocap Node**: Streams hand pose data from Manus gloves
 2. **Manus Skeleton Preprocessor**: Converts glove data to 21-joint skeleton format
 3. **GeoRT Deployer**: Runs trained models and publishes commands to robot controllers
-   - Loads trained IK models for left and right hands
-   - Subscribes to preprocessed hand poses
+   - Loads trained IK models for left and/or right hands
+   - Subscribes to preprocessed hand poses (`/manus_poses` or `/manus_poses_{left|right}`)
+   - Uses `AllegroCommandForwarder` for controller management:
+     - Automatically activates appropriate controllers via `controller_manager`
+     - Single robot mode (`two_robots=False`): `/allegro_hand_position_controller/commands`
+     - Dual robot mode (`two_robots=True`): `/allegro_hand_position_controller_{r|l}/commands`
    - Performs forward pass through GeoRT model
    - Applies post-processing (reordering, optional calibration)
+   - Applies EMA smoothing based on previous command for stable control
+   - Applies rate limiting to prevent sudden joint movements
    - Publishes joint commands to Allegro hand controllers
+   - Returns to safe base position on shutdown
+
+**Smoothing Mechanism:**
+- **EMA Formula**: `smoothed = α × target + (1 - α) × previous_command`
+- **α (smoothing_alpha)**: Controls responsiveness (0 = maximum smoothing, 1 = no smoothing)
+- **Rate Limiting**: Limits maximum joint angle change per control tick
+
+**Controller Management:**
+- **Automatic Activation**: Controllers are checked and activated automatically on startup
+- **Status Monitoring**: Verifies controller state via `controller_manager` services
+- **Safe Shutdown**: Returns hand to neutral position before node termination
 
 **Setup**
 
@@ -550,33 +596,146 @@ python glove_based/manus_skeleton_21.py
 # Terminal 3: Launch Allegro hand controller
 cd allegro_hand_ros2
 source install/setup.bash
+
+# For single hand
+ros2 launch allegro_hand_bringup allegro_hand.launch.py
+
+# For dual hands
 ros2 launch allegro_hand_bringup allegro_hand_duo.launch.py
 ```
 
-**Run GeoRT Deployment**
+---
+
+**Option A: Single Hand Deployment**
+
+Deploy to a single Allegro hand using `geort_allegro_deploy_single.py`.
+
+> **Note:**
+> - The scale factor is automatically loaded from the checkpoint's `config.json` file, ensuring consistency with training.
+> - This script uses the same `GeortAllegroDeployer` class from `geort_allegro_deploy.py`, ensuring consistent behavior across single and dual hand deployments.
+
+**Basic Usage:**
+
+```bash
+# Right hand deployment
+python glove_based/geort_allegro_deploy_single.py \
+    --ckpt "human1_right_1028_150817_allegro_right_s10" \
+    --side right
+
+# Left hand deployment
+python glove_based/geort_allegro_deploy_single.py \
+    --ckpt "human1_left_1028_150409_allegro_left_s10" \
+    --side left
+```
+
+**Advanced Usage:**
+
+```bash
+# Deploy with custom smoothing and mocap topic
+python glove_based/geort_allegro_deploy_single.py \
+    --ckpt "human1_right_1028_150817_allegro_right_s10" \
+    --side right \
+    --smoothing_alpha 0.7 \
+    --loop_hz 100.0 \
+    --mocap_topic "/manus_poses_right"
+```
+
+**Command Arguments:**
+
+| Argument | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `--ckpt` | Checkpoint tag for the hand model | Yes | - |
+| `--side` | Hand side (left or right) | Yes | - |
+| `--mocap_topic` | Manus mocap topic name | No | `/manus_poses_{side}` |
+| `--loop_hz` | Control loop frequency in Hz | No | 100.0 |
+| `--smoothing_alpha` | EMA smoothing alpha (0..1, 1=no smoothing) | No | 0.9 |
+| `--use_last` | Load last checkpoint instead of best | No | False (uses best) |
+
+> **Note:** Single hand deployment uses `AllegroCommandForwarder` with `two_robots=False`, which automatically publishes to `/allegro_hand_position_controller/commands` (no suffix) and activates the controller, suitable for single robot setups.
+
+**Additional ROS2 Parameters:**
+
+The deployer also supports runtime-configurable ROS2 parameters:
+- `smoothing_alpha`: EMA smoothing factor (0..1)
+- `max_delta`: Maximum joint angle change per tick in radians (0 disables)
+- `snap_on_start`: Initialize to target pose directly on first frame
+- `loop_hz`: Control loop frequency
+
+---
+
+**Option B: Dual Hand Deployment**
+
+Deploy to both Allegro hands simultaneously using `geort_allegro_deploy.py`.
 
 > **Note:** The scale factor is automatically loaded from each checkpoint's `config.json` file, ensuring consistency with training. Each hand (left/right) uses its own model's scale.
 
+**Basic Usage:**
+
 ```bash
-# Terminal 4: Load Both Hand Checkpoints
+# Deploy both hands
 python glove_based/geort_allegro_deploy.py \
-      --right_ckpt "human1_right_1028_150817_allegro_right_s10" \
-      --left_ckpt "human1_left_1028_150409_allegro_left_s10"
+    --right_ckpt "human1_right_1028_150817_allegro_right_s10" \
+    --left_ckpt "human1_left_1028_150409_allegro_left_s10"
 ```
+
+**Advanced Usage:**
+
+```bash
+# Deploy with custom smoothing
+python glove_based/geort_allegro_deploy.py \
+    --right_ckpt "human1_right_1028_150817_allegro_right_s10" \
+    --left_ckpt "human1_left_1028_150409_allegro_left_s10" \
+    --smoothing_alpha 0.7 \
+    --loop_hz 100.0
+```
+
+**Command Arguments:**
+
+| Argument | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `--right_ckpt` | Checkpoint tag for right hand model | Yes | - |
+| `--left_ckpt` | Checkpoint tag for left hand model | Yes | - |
+| `--loop_hz` | Control loop frequency in Hz | No | 100.0 |
+| `--smoothing_alpha` | EMA smoothing alpha (0..1, 1=no smoothing) | No | 0.9 |
+| `--use_last` | Load last checkpoints instead of best | No | False (uses best) |
+
+**Additional ROS2 Parameters:**
+
+The deployer also supports runtime-configurable ROS2 parameters:
+- `smoothing_alpha`: EMA smoothing factor (0..1)
+- `max_delta`: Maximum joint angle change per tick in radians (0 disables)
+- `snap_on_start`: Initialize to target pose directly on first frame
+- `loop_hz`: Control loop frequency
+
+---
 
 **Post-Processing Notes**
 
-The `GeortAllegroDeployer` includes a `post_processing_commands()` function that:
+Both deployment options use the same `GeortAllegroDeployer` class (defined in `geort_allegro_deploy.py`), ensuring consistent behavior. The class includes a `post_processing_commands()` function that:
 - **Step A**: Reorders joints from model output (Index, Middle, Ring, Thumb) to hardware order (Thumb, Index, Middle, Ring)
 - **Step B**: Applies optional per-joint calibration adjustments (currently disabled by default)
 
 > **Important**: The Step B calibration adjustments are hardware-specific tweaks that are **optional and not recommended** for general use. By default, these are commented out in the code. Only enable if you observe systematic errors in your specific robot setup.
 
-**Command Arguments**
+**Implementation Details:**
 
-| Argument | Description | Required |
-|----------|-------------|----------|
-| `--right_ckpt` | Checkpoint tag for right hand model | Yes |
-| `--left_ckpt` | Checkpoint tag for left hand model | Yes |
-| `--loop_hz` | Control loop frequency in Hz | No (default: 100.0) |
-| `--use_last` | Load last checkpoints instead of best | No (default: best) |
+Both deployment scripts use the same `GeortAllegroDeployer` class with `AllegroCommandForwarder` for controller management:
+
+- **Single deployment** (`geort_allegro_deploy_single.py`):
+  - Imports `GeortAllegroDeployer` class
+  - Uses `AllegroCommandForwarder(side=side, two_robots=False)`
+  - Controller: `/allegro_hand_position_controller/commands` (no suffix)
+  - Automatically activates the controller via controller_manager
+  - Suitable for single robot setups
+
+- **Dual deployment** (`geort_allegro_deploy.py`):
+  - Defines `GeortAllegroDeployer` class
+  - Uses `AllegroCommandForwarder(side=side, two_robots=True)`
+  - Controllers: `/allegro_hand_position_controller_r/commands` and `/allegro_hand_position_controller_l/commands`
+  - Automatically activates both controllers via controller_manager
+  - Suitable for dual robot setups with separate controllers
+
+- **Shared components**:
+  - Identical smoothing, rate limiting, and post-processing logic
+  - Controller activation and management via `AllegroCommandForwarder`
+  - Safe base position return on shutdown

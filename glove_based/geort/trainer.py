@@ -13,6 +13,7 @@ from human motion capture data to robot hand configurations.
 import os
 import time
 import math
+import random
 from pathlib import Path
 from datetime import datetime
 from statistics import mean, stdev
@@ -43,6 +44,23 @@ from geort.utils.plot_utils import _compute_grad_norm_and_vec, draw_chamfer_loss
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
+
+def set_seed(seed):
+    """
+    Set random seed for reproducibility.
+
+    Args:
+        seed (int): Random seed value
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)  # for multi-GPU
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    print(f"Random seed set to: {seed}")
+
 
 def merge_dict_list(dl):
     """Merge list of dictionaries into a single dictionary with numpy arrays."""
@@ -377,6 +395,7 @@ class GeoRTTrainer:
             "W_COLLISION": w_collision,
             "W_PINCH": w_pinch,
             "SCALE": scale_factor,
+            "SEED": kwargs.get("seed", None),
             "analysis": analysis,
             "compute_gradients": compute_gradients,
             "grad_log_step": grad_log_step,
@@ -747,7 +766,17 @@ if __name__ == '__main__':
     parser.add_argument('--scale', type=float, default=1.0,
                        help='Scale factor for human motion data (default: 1.0, no scaling)')
 
+    # Random seed
+    parser.add_argument('--seed', type=int, default=42,
+                       help='Random seed for reproducibility (default: 42)')
+
     args = parser.parse_args()
+
+    # ------------------------------------------------------------------------
+    # Set Random Seed
+    # ------------------------------------------------------------------------
+
+    set_seed(args.seed)
 
     # ------------------------------------------------------------------------
     # Hyperparameters
@@ -811,6 +840,7 @@ if __name__ == '__main__':
         w_collision=args.w_collision,
         w_pinch=args.w_pinch,
         scale=args.scale,
+        seed=args.seed,
         # Analysis flags
         analysis=True,
         compute_gradients=False,

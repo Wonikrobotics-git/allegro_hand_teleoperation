@@ -64,7 +64,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', default='human1', type=str)  # the data package name.
     parser.add_argument('--handness', default='right', type=str)  # the data package name.
-    parser.add_argument('--duration', default=1, type=int)  # duration in seconds. (5 minutes default)
+    parser.add_argument('--duration', default=60*5, type=int)  # duration in seconds. (5 minutes default)
     parser.add_argument('--hz', default=20, type=int)  # expected frame rate.
     args = parser.parse_args()
 

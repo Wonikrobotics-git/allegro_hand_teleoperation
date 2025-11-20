@@ -159,12 +159,12 @@ class GloveViz:
         self.label_line_sets = {}  # Index number label (LineSet)
         self.viz.add_geometry(o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.012))
 
-class MinimalSubscriber(Node):
+class ManusSkeleton21Node(Node):
     OMITTED = {5, 10, 15, 20}
     TARGET_TOPICS = ['/manus_glove_right', '/manus_glove_left']
 
     def __init__(self):
-        super().__init__("manus_ros2_client_py")
+        super().__init__("manus_skeleton_21")
 
         self.glove_viz_map = {}
 
@@ -445,7 +445,7 @@ class MinimalSubscriber(Node):
 
 def spin_node():
     rclpy.init(args=sys.argv)
-    node = MinimalSubscriber()
+    node = ManusSkeleton21Node()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

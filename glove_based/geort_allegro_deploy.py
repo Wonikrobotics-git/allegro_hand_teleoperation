@@ -18,19 +18,25 @@ from allegro import AllegroCommandForwarder
 from geort import load_model
 
 class GeortAllegroDeployer(Node):
-    def __init__(self, side: str, mocap: ManusMocap, model, loop_hz: float = 50.0):
-        super().__init__(f'manus_allegro_deployer_{side}')
+    def __init__(self, side: str, mocap: ManusMocap, model, loop_hz: float = 50.0,
+                 smoothing_alpha: float = 0.9, two_robots: bool = True):
+        super().__init__(f'geort_allegro_deployer_{side}')
         self.mocap = mocap
         self.model = model
         self.side = side
-        self.allegro = AllegroCommandForwarder(side=side)
+
+        # Create AllegroCommandForwarder with appropriate configuration
+        # two_robots=True: dual robot system (uses _l/_r suffix)
+        # two_robots=False: single robot system (no suffix)
+        self.allegro = AllegroCommandForwarder(side=side, two_robots=two_robots)
+        self.publisher_ = self.allegro.publisher_
 
         # Get scale from model's config (automatically loaded from checkpoint)
         self.scale = model.scale
         print(f"[{side.capitalize()} Deployer] Using scale from checkpoint: {self.scale}")
 
         # Parameters (declarable/tweakable)
-        self.declare_parameter('smoothing_alpha', 0.9)   # EMA alpha: 0..1 (1 = no smoothing)
+        self.declare_parameter('smoothing_alpha', float(smoothing_alpha))   # EMA alpha: 0..1 (1 = no smoothing)
         self.declare_parameter('max_delta', 0.05)        # rad per tick max change (0 disables)
         self.declare_parameter('snap_on_start', True)    # Whether to initialize to target directly on the first frame
         self.declare_parameter('loop_hz', float(loop_hz))
@@ -38,6 +44,8 @@ class GeortAllegroDeployer(Node):
         self.alpha = float(self.get_parameter('smoothing_alpha').value)
         self.max_delta = float(self.get_parameter('max_delta').value)
         self.snap_on_start = bool(self.get_parameter('snap_on_start').value)
+
+        print(f"[{side.capitalize()} Deployer] Smoothing alpha: {self.alpha}")
 
         # internal state
         self._last_cmd = None   # numpy array shape (16,)
@@ -143,11 +151,11 @@ class GeortAllegroDeployer(Node):
             # publish initial value immediately (avoid initial silence)
             msg = Float64MultiArray()
             msg.data = self._last_cmd.tolist()
-            self.allegro.publisher_.publish(msg)
+            self.publisher_.publish(msg)
             self.get_logger().info(f"{self.side} initialized cmd: {np.round(self._last_cmd,3).tolist()}")
             return
 
-        # EMA smoothing
+        # EMA smoothing based on previous command
         alpha = self.alpha
         smoothed = alpha * target + (1.0 - alpha) * self._last_cmd
 
@@ -163,7 +171,7 @@ class GeortAllegroDeployer(Node):
         # publish
         msg = Float64MultiArray()
         msg.data = new_cmd.tolist()
-        self.allegro.publisher_.publish(msg)
+        self.publisher_.publish(msg)
 
         # update internal state
         self._last_cmd = new_cmd
@@ -182,6 +190,11 @@ Example:
   # Deploy both hands with trained checkpoints
   %(prog)s --right_ckpt "human1_right_1028_150817_allegro_right_last" \\
            --left_ckpt "human1_left_1028_150817_allegro_left_last"
+
+  # Deploy with custom smoothing
+  %(prog)s --right_ckpt "human1_right_1028_150817_allegro_right_last" \\
+           --left_ckpt "human1_left_1028_150817_allegro_left_last" \\
+           --smoothing_alpha 0.7
         ''')
 
     parser.add_argument('--right_ckpt', type=str, required=True,
@@ -190,10 +203,16 @@ Example:
                         help="Checkpoint tag for left hand model")
     parser.add_argument('--loop_hz', type=float, default=100.0,
                         help="Control loop frequency in Hz (default: 100.0)")
+    parser.add_argument('--smoothing_alpha', type=float, default=0.9,
+                        help='EMA smoothing alpha (0..1, 1=no smoothing, default: 0.9)')
     parser.add_argument('--use_last', action='store_true',
                         help='Load last checkpoints instead of best checkpoints (default: best)')
 
     args = parser.parse_args()
+
+    # Validate alpha value
+    if not (0.0 <= args.smoothing_alpha <= 1.0):
+        raise ValueError("smoothing_alpha must be between 0.0 and 1.0")
 
     rclpy.init()
 
@@ -208,9 +227,20 @@ Example:
     print(f"[Loading] Left hand model: {args.left_ckpt} (checkpoint: {'last' if args.use_last else 'best'})")
     left_model = load_model(args.left_ckpt, epoch=epoch_to_load)
 
-    # deployers with configurable loop_hz (scale automatically loaded from checkpoint)
-    right_deployer = GeortAllegroDeployer("right", right_mocap, right_model, loop_hz=args.loop_hz)
-    left_deployer  = GeortAllegroDeployer("left", left_mocap, left_model, loop_hz=args.loop_hz)
+    # deployers with configurable parameters (scale automatically loaded from checkpoint)
+    # two_robots=True: dual robot system (uses _l/_r suffix for controllers)
+    right_deployer = GeortAllegroDeployer(
+        "right", right_mocap, right_model,
+        loop_hz=args.loop_hz,
+        smoothing_alpha=args.smoothing_alpha,
+        two_robots=True
+    )
+    left_deployer = GeortAllegroDeployer(
+        "left", left_mocap, left_model,
+        loop_hz=args.loop_hz,
+        smoothing_alpha=args.smoothing_alpha,
+        two_robots=True
+    )
 
     executor = MultiThreadedExecutor()
     executor.add_node(right_mocap)
