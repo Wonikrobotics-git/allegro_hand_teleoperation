@@ -265,31 +265,6 @@ The retargeting process consists of 6 steps:
 
 Learning-based approach using GeoRT (Geometric Retargeting) for improved accuracy through data-driven mapping.
 
-### Recent Updates
-
-**v2.1 - Controller Management Unification (2025-01)**
-- ✅ **Unified controller management**: Both single and dual deployments now use `AllegroCommandForwarder`
-- ✅ **Automatic controller activation**: Controllers are automatically activated via `controller_manager` on startup
-- ✅ **Safe shutdown**: Automatic return to safe base position on node termination
-- ✅ **Simplified configuration**: Single `two_robots` parameter distinguishes between single/dual robot setups
-- ✅ **Removed redundancy**: Eliminated `--controller_topic` parameter in favor of automatic topic management
-
-**v2.0 - Unified Deployment Architecture (2025-01)**
-- ✅ **Simplified deployment scripts**: Merged `geort_allegro_deploy_v2.py` into `geort_allegro_deploy.py`
-- ✅ **Code reuse**: `geort_allegro_deploy_single.py` now imports from `geort_allegro_deploy.py` (no code duplication)
-- ✅ **Streamlined smoothing**: Single-stage EMA based on previous command (removed dual-stage approach)
-- ✅ **Configurable smoothing**: Added `--smoothing_alpha` parameter (default: 0.9) for both single and dual deployments
-- ✅ **Consistent API**: Both single and dual deployment use the same `GeortAllegroDeployer` class
-- ✅ **Improved docs**: Added explicit smoothing mechanism explanation with formula
-
-**Breaking Changes:**
-- `geort_allegro_deploy_single.py` now requires `--side` parameter (left/right)
-- Default mocap topic changed from `/manus_poses` to `/manus_poses_{side}` for single deployment
-- Default smoothing_alpha changed from 0.5 to 0.9 for consistency
-- Removed `--controller_topic` parameter (now managed automatically by `AllegroCommandForwarder`)
-
----
-
 ### Workflow
 
 1. **Setup Environment** - Create conda environment with required dependencies

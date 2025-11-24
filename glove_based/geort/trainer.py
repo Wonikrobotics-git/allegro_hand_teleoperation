@@ -325,6 +325,9 @@ class GeoRTTrainer:
         # Setup: Configuration & Hyperparameters
         # ====================================================================
 
+        # Start training timer
+        train_start_time = time.time()
+
         # Analysis flags
         analysis = kwargs.get("analysis", False)
         grad_log_step = kwargs.get("grad_log_step", 200)
@@ -472,6 +475,9 @@ class GeoRTTrainer:
 
         for epoch in range(IK_ITER):
 
+            # Start epoch timer
+            epoch_start_time = time.time()
+
             # Initialize epoch loggers
             train_log = {
                 'total_loss': 0,
@@ -483,15 +489,17 @@ class GeoRTTrainer:
             for k in loss_keys:
                 analysis_log[f"Loss/Raw/{k}"] = 0.0
                 analysis_log[f"Loss/Weighted/{k}"] = 0.0
-                analysis_log[f"GradNorm/{k}"] = 0.0
+                if compute_gradients:
+                    analysis_log[f"GradNorm/{k}"] = 0.0
                 if normalize_losses:
                     analysis_log[f"Loss/Normalized/{k}"] = 0.0
 
-            for i in range(len(loss_keys)):
-                for j in range(i + 1, len(loss_keys)):
-                    k1 = loss_keys[i]
-                    k2 = loss_keys[j]
-                    analysis_log[f"GradCos/{k1}_vs_{k2}"] = 0.0
+            if compute_gradients:
+                for i in range(len(loss_keys)):
+                    for j in range(i + 1, len(loss_keys)):
+                        k1 = loss_keys[i]
+                        k2 = loss_keys[j]
+                        analysis_log[f"GradCos/{k1}_vs_{k2}"] = 0.0
 
             # ----------------------------------------------------------------
             # Batch Processing
@@ -642,11 +650,17 @@ class GeoRTTrainer:
             train_log = {k: v / num_batches for k, v in train_log.items()}
             analysis_log = {k: v / num_batches for k, v in analysis_log.items()}
 
+            # Calculate epoch time
+            epoch_time = time.time() - epoch_start_time
+            train_log['epoch_time'] = epoch_time
+
             # Wandb logging
             if self.logger:
                 logger_dict = {}
                 logger_dict.update(train_log)
-                logger_dict.update(analysis_log)
+                # Only log analysis metrics if analysis is enabled
+                if analysis:
+                    logger_dict.update(analysis_log)
                 self.logger.log(logger_dict)
 
             # Console logging
@@ -657,6 +671,7 @@ class GeoRTTrainer:
                 f" - Chamfer: {format_loss(float(chamfer_loss.detach().cpu().item()))}"
                 f" - Curvature: {format_loss(float(curvature_loss.detach().cpu().item()))}"
                 f" - Pinch: {format_loss(float(pinch_loss.detach().cpu().item()))}"
+                f" | Time: {epoch_time:.2f}s"
             )
 
             # Save checkpoints every 100 epochs
@@ -717,6 +732,26 @@ class GeoRTTrainer:
                 draw_chamfer_loss(inp_orig_list, tgt_orig_list, dmat0_list, nn_idx_list,
                                 fig_finger_name, self.human_name, hand_model_name, self.RIGHT, scale=scale_factor)
                 print("[Chamfer Visualization Complete]\n")
+
+        # ====================================================================
+        # Training Complete: Log Total Time
+        # ====================================================================
+
+        total_train_time = time.time() - train_start_time
+        train_mins = total_train_time / 60
+        train_secs = total_train_time - train_mins * 60
+
+        print("=" * 70)
+        print(f"Training Complete!")
+        print(f"Total Training Time: {train_mins:.0f} mins {train_secs:.2f} secs ({total_train_time:.2f}s)")
+        print("=" * 70)
+
+        # Log to wandb
+        if self.logger:
+            self.logger.log({
+                "Training/total_time_seconds": total_train_time,
+                "Training/total_time_minutes": train_mins
+            })
 
         return
 
