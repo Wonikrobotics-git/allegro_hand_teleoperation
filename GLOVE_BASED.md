@@ -45,13 +45,24 @@ ROS2/
 └── ManusSDK
 ```
 
-## Optional: Hardcode Left/Right Glove Recognition
+## Hardcode Left/Right Glove Recognition
 
-By default, gloves are auto-assigned as `manus_glove_0`, `manus_glove_1` based on connection order. To ensure consistent left/right identification regardless of connection order, you can hardcode glove IDs.
+> [!CAUTION]
+> **This step is practically required for this project.** By default, gloves are published as `manus_glove_0`, `manus_glove_1` based on connection order. However, all Python scripts in this project subscribe to `manus_glove_left` and `manus_glove_right` topics. **If you skip this hardcoding step, the scripts will run without errors but will not receive any glove data**, resulting in no robot movement or response.
 
-### Implementation
+### Step 1: Find Your Glove IDs
 
-Modify line 336 in `ManusDataPublisher.cpp`. For example, if your left glove ID is `123456789` and right glove ID is `-987654321`:
+After building the Manus ROS2 packages, run the data publisher:
+
+```bash
+ros2 run manus_ros2 manus_data_publisher
+```
+
+The Glove ID is automatically printed to the logs every 10 seconds. Wear each glove one at a time and note its ID from the logs to identify left/right.
+
+### Step 2: Modify the Code
+
+Modify line 336 in `ManusDataPublisher.cpp`. Replace the example IDs with your actual glove IDs:
 
 ```cpp
 auto t_Publisher = m_GlovePublisher.find(t_Msg.glove_id);
@@ -72,17 +83,11 @@ if(t_Publisher == m_GlovePublisher.end()){
 }
 ```
 
-### Finding Your Glove IDs
+After modifying, rebuild the Manus ROS2 packages to apply the changes.
 
-1. Run the code and check logs (lines 348-357 print Glove ID every 10 seconds)
-2. Wear each glove and note its ID to identify left/right
-3. Replace the ID values in the code above with your actual IDs
+### Result
 
-### Benefits
-
-- ✅ Consistent topic naming (`manus_glove_left`/`manus_glove_right`)
-- ✅ Connection order independence
-- ✅ Clearer data identification
+Once configured, gloves will be published to consistent topic names (`manus_glove_left`/`manus_glove_right`) regardless of connection order, enabling all scripts in this project to work correctly.
 
 ---
 
