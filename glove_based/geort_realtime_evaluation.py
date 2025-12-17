@@ -36,9 +36,6 @@ def main():
     epoch_to_load = 0 if args.use_last else 'best'
     model = load_model(args.ckpt, epoch=epoch_to_load)
 
-    # Get scale from model's config
-    scale = model.scale
-    print(f"[Realtime Evaluation] Using scale from checkpoint: {scale}")
     config = get_config(args.hand)
     hand = HandKinematicModel.build_from_config(config, render=True)
     viewer_env = hand.get_viewer_env()
@@ -53,10 +50,6 @@ def main():
 
             # 2) Data → qpos → set target
             points = data['result']
-
-            # Apply scaling to mocap data (automatically loaded from checkpoint config)
-            if scale != 1.0:
-                points = points * scale
 
             t1 = time.perf_counter()
 

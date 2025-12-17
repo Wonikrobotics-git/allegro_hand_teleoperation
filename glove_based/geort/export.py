@@ -27,10 +27,6 @@ class GeoRTRetargetingModel:
         self.model.eval()
         self.qpos_normalizer = HandFormatter(joint_lower_limit, joint_upper_limit) # GeoRT will do normalization.
 
-        # Load scale from config (default to 1.0 if not found)
-        self.scale = config.get("hyperparams", {}).get("SCALE", 1.0)
-        print(f"[Model] Loaded scale from config: {self.scale}")
-
     def forward(self, keypoints):
         # keypoints: [N, 3]
         keypoints = keypoints[self.human_ids] # extract.
