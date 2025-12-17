@@ -43,7 +43,7 @@ def _compute_grad_norm_and_vec(loss_term, params, retain_graph=True):
     norm = float(vec.norm().item()) if vec.numel() > 0 else 0.0
     return norm, vec
 
-def draw_chamfer_loss(inp_list, tgt_list, dmat_list, nn_idx_list, fig_finger_name, human_name="unknown", robot_name="unknown", RIGHT=True, scale=1.0):
+def draw_chamfer_loss(inp_list, tgt_list, dmat_list, nn_idx_list, fig_finger_name, human_name="unknown", robot_name="unknown", RIGHT=True):
     assert len(inp_list) == len(tgt_list) == len(dmat_list) == len(nn_idx_list)
     n = len(inp_list)  # expected number of columns (should be 4)
 
@@ -173,14 +173,8 @@ def draw_chamfer_loss(inp_list, tgt_list, dmat_list, nn_idx_list, fig_finger_nam
     # Import get_data_root to save in correct location
     from geort.utils.path import get_data_root
 
-    # Format: chamfer_{human_name}_{robot_name}[_scale{scale}].html
-    hand_side = "right" if RIGHT else "left"
-    if scale != 1.0:
-        # Include scale in filename if not default
-        scale_str = f"{scale:.2f}".replace('.', 'p')  # e.g., 0.7 -> 0p70
-        filename = f"chamfer_{human_name}_{robot_name}_scale{scale_str}.html"
-    else:
-        filename = f"chamfer_{human_name}_{robot_name}.html"
+    # Format: chamfer_{human_name}_{robot_name}.html
+    filename = f"chamfer_{human_name}_{robot_name}.html"
     out_path = Path(get_data_root()) / filename
 
     figp.write_html(str(out_path), include_plotlyjs='cdn')

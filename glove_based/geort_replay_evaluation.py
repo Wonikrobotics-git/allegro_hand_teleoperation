@@ -17,9 +17,6 @@ def main():
     epoch_to_load = 0 if args.use_last else 'best'
     model = load_model(args.ckpt, epoch=epoch_to_load)
 
-    # Get scale from model's config
-    scale = model.scale
-    print(f"[Replay Evaluation] Using scale from checkpoint: {scale}")
 
     # Motion Capture.
     mocap = ReplayMocap(args.data)
@@ -38,11 +35,6 @@ def main():
 
         if result['status'] == 'recording' and result["result"] is not None:
             points = result["result"]
-
-            # Apply scaling to mocap data (automatically loaded from checkpoint config)
-            if scale != 1.0:
-                points = points * scale
-
             qpos = model.forward(points)
 
             hand.set_qpos_target(qpos)

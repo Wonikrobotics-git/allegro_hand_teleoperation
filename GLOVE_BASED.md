@@ -12,10 +12,89 @@ This document covers two retargeting methods:
 
 > **Note:** This project uses Manus Core 3 SDK v3.0.0. Later versions should work with minor adjustments.
 
+> [!IMPORTANT]
+> **Calibration Recommendation:** For stability, we recommend performing glove calibration on Windows using the MANUS Core application (v3.0.1 or later) and saving the `.mcal` files. These calibration files can then be transferred to your Linux system for use with the ROS2 node. See [Glove Calibration](#glove-calibration) section below for details.
+
 ### Prerequisites
 
 - **MANUS Core 3 SDK** (with ROS2 Package): https://docs.manus-meta.com/3.0.0/Resources/
 - **Connection Guide**: https://docs.manus-meta.com/3.0.0/Plugins/SDK/ROS2/getting%20started/
+
+### Glove Calibration
+
+Calibration files (`.mcal`) store **skeleton scaling and sensor correction parameters** matched to the user's hand size:
+
+| Item | Without Calibration | With Calibration |
+|------|---------------------|------------------|
+| Finger length | SDK default values | Scaled to actual user hand size |
+| Joint angles | Based on raw sensor data | Corrected for individual ROM |
+| Fingertip position | May be inaccurate | Millimeter precision |
+| Hand pose reproducibility | Low | High |
+
+#### How Calibration is Applied in ROS2
+
+When the `manus_data_publisher` node runs, calibration files are loaded into the MANUS SDK, and **all published data is output in a calibrated state**.
+
+```
+MANUS Glove (Hardware)
+        ↓
+   Raw Sensor Data
+        ↓
+┌─────────────────────────────────────────────┐
+│  MANUS SDK (CoreSdk_SetGloveCalibration)    │
+│  ← humanLeftMetaglove.mcal loaded           │
+│  ← humanRightMetaglove.mcal loaded          │
+│  (calibration files exported from Windows)  │
+│                                             │
+│  Skeleton calculation with calibration      │
+└─────────────────────────────────────────────┘
+        ↓
+   Calibrated Data
+        ↓
+┌─────────────────────────────────────────────┐
+│  manus_data_publisher (ROS2 Node)           │
+│  → /manus_glove_left                        │
+│  → /manus_glove_right                       │
+└─────────────────────────────────────────────┘
+        ↓
+   ROS2 Topics (calibration-applied data)
+```
+
+#### Calibration Application in Code
+
+**1. Calibration file loading and SDK application** (`ManusDataPublisher.cpp:593-598`):
+```cpp
+SDKReturnCode t_Res = CoreSdk_SetGloveCalibration(
+    t_GloveId,
+    t_CalibData->data(),      // Binary data from .mcal file
+    static_cast<uint32_t>(t_CalibData->size()),
+    &t_Result
+);
+```
+
+**2. Receiving calibrated skeleton data** (`ManusDataPublisher.cpp:655`):
+```cpp
+// SDK internally returns data with calibration applied
+CoreSdk_GetRawSkeletonData(i, t_NxtClientRawSkeleton.nodes.data(), ...);
+```
+
+**3. Publishing as ROS2 messages** (`ManusDataPublisher.cpp:337-351`):
+```cpp
+// These position/orientation values have calibration applied
+t_Pose.position.x = t_Pos.x;
+t_Pose.position.y = t_Pos.y;
+t_Pose.position.z = t_Pos.z;
+t_Pose.orientation.x = t_Rot.x;
+// ...
+t_Msg.raw_nodes.push_back(t_Node);
+```
+
+#### ROS2 Message Fields with Calibration Applied
+
+The following fields in the `ManusGlove` message contain calibration-corrected values:
+- `raw_nodes[].pose.position` - Position of each finger joint (scaled to hand size via calibration)
+- `raw_nodes[].pose.orientation` - Rotation of each finger joint (joint angle corrected via calibration)
+- `ergonomics[].value` - Finger flexion/extension values (corrected to individual ROM via calibration)
 
 ### Verification
 
@@ -422,9 +501,6 @@ python glove_based/geort/trainer.py \
 - `--w_collision`: Collision loss weight (default: 0.0)
 - `--w_pinch`: Pinch loss weight (default: 1.0)
 
-*Data Scaling:*
-- `--scale`: Scale factor for human motion data (default: 1.0, no scaling)
-
 *Wandb Configuration:*
 - `--wandb_project`: Project name (default: `geort`)
 - `--wandb_entity`: Username/team (optional)
@@ -432,29 +508,22 @@ python glove_based/geort/trainer.py \
 - `--ckpt_tag`: Checkpoint tag (default: `''`)
 
 **Output:**
-- **Checkpoints**: `glove_based/checkpoint/allegro_{left|right}_{timestamp}_{tag}/`
+- **Checkpoints**: `glove_based/checkpoint/{human_name}_{robot_name}_{timestamp}_{tag}/`
   - `best.pth` - Model with lowest training loss (automatically tracked, **recommended for deployment**)
   - `last.pth` - Latest model from final epoch
   - `epoch_{N}.pth` - Periodic snapshots (every 100 epochs)
-  - `config.json` - Training configuration including scale factor
-- **Chamfer Visualization**: `glove_based/data/chamfer_{human_name}_{robot_name}[_scale{scale}].html`
+  - `config.json` - Training configuration
+- **Monitor**: Wandb dashboard or terminal output
+- **Chamfer Visualization**: `glove_based/data/chamfer_{human_name}_{robot_name}.html`
   - Interactive 3D point cloud visualization for qualitative assessment
   - Open in browser to inspect human-robot hand geometry alignment
   - Use with quantitative metrics (loss values) for comprehensive evaluation
-- **Monitor**: Wandb dashboard or terminal output
+![](./materials/chamfer_distance.png)
+
 
 **Training Notes:**
 
 *Best Checkpoint Tracking:* Training automatically saves the model with lowest loss as `best.pth` (recommended). Console shows: `→ New best model saved! Loss: X.XXXXe-XX`. All evaluation/deployment scripts use `best.pth` by default; add `--use_last` flag to use `last.pth` instead.
-
-*Data Scaling (Optional):* Use `--scale` parameter to experiment with different scaling factors (e.g., 0.7, 0.8, 1.0, 1.2) for adapting to different hand sizes or glove calibrations. The scale value is saved in `config.json` and automatically loaded during inference/deployment for consistency. Original data files are never modified - scaling is applied on-the-fly.
-
-```bash
-# Example: Train with different scales and compare
-python glove_based/geort/trainer.py --hand allegro_right --human_data human1.npy --scale 0.7 --ckpt_tag "s07"
-python glove_based/geort/trainer.py --hand allegro_right --human_data human1.npy --scale 1.0 --ckpt_tag "s10"
-# Then evaluate to find the best scale for your setup
-```
 
 ---
 
@@ -463,8 +532,6 @@ python glove_based/geort/trainer.py --hand allegro_right --human_data human1.npy
 #### 4.1 Replay Evaluation (Recorded Data)
 
 Test trained model with pre-recorded human hand data in Sapien simulator.
-
-> **Note:** The scale factor is automatically loaded from the checkpoint's `config.json` file, ensuring consistency with training. No manual scale specification needed.
 
 **Right Hand**
 
@@ -495,8 +562,6 @@ python glove_based/geort_replay_evaluation.py \
 #### 4.2 Real-time Simulation (Sapien)
 
 Test trained model with live glove input in Sapien simulator.
-
-> **Note:** The scale factor is automatically loaded from the checkpoint's `config.json` file, ensuring consistency with training. No manual scale specification needed.
 
 **Setup**
 
@@ -603,9 +668,7 @@ ros2 launch allegro_hand_bringup allegro_hand_duo.launch.py
 
 Deploy to a single Allegro hand using `geort_allegro_deploy_single.py`.
 
-> **Note:**
-> - The scale factor is automatically loaded from the checkpoint's `config.json` file, ensuring consistency with training.
-> - This script uses the same `GeortAllegroDeployer` class from `geort_allegro_deploy.py`, ensuring consistent behavior across single and dual hand deployments.
+> **Note:** This script uses the same `GeortAllegroDeployer` class from `geort_allegro_deploy.py`, ensuring consistent behavior across single and dual hand deployments.
 
 **Basic Usage:**
 
@@ -660,8 +723,6 @@ The deployer also supports runtime-configurable ROS2 parameters:
 
 Deploy to both Allegro hands simultaneously using `geort_allegro_deploy.py`.
 
-> **Note:** The scale factor is automatically loaded from each checkpoint's `config.json` file, ensuring consistency with training. Each hand (left/right) uses its own model's scale.
-
 **Basic Usage:**
 
 ```bash
@@ -670,6 +731,7 @@ python glove_based/geort_allegro_deploy.py \
     --right_ckpt "human1_right_1028_150817_allegro_right_s10" \
     --left_ckpt "human1_left_1028_150409_allegro_left_s10"
 ```
+
 
 **Advanced Usage:**
 
