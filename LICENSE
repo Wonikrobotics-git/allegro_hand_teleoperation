@@ -39,12 +39,10 @@ plan to use or redistribute those components.
 2. GeoRT Retargeting Framework (AI-based Hand Retargeting)
    License: Creative Commons CC-BY-NC 4.0
    Copyright (c) UC Berkeley and Meta Platforms, Inc.
-   URL: https://haozhi.io/hora/
+   URL: https://github.com/facebookresearch/GeoRT
 
    IMPORTANT: The GeoRT code and model weights are licensed under CC-BY-NC.
    This license prohibits commercial use.
-   No GeoRT source code is redistributed in this repository; only algorithmic
-   concepts and API-level ideas were referenced.
 
    Full license: https://creativecommons.org/licenses/by-nc/4.0/
 
