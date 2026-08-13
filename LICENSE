@@ -1,10 +1,43 @@
+==========================================================
+SCOPE OF THIS LICENSE
+==========================================================
+
+This repository contains code under two different licenses.
+
+(A) MIT License — applies to all files EXCEPT those listed in (B).
+    Copyright (c) 2025 Wonik Robotics
+    Additional Contributions Copyright (c) 2025 Jungyeon Lee
+
+(B) Creative Commons Attribution-NonCommercial 4.0 International
+    (CC BY-NC 4.0) — applies to files derived from the GeoRT project.
+    Copyright (c) UC Berkeley and Meta Platforms, Inc. and affiliates.
+
+    Covered paths:
+      - glove_based/geort/          (entire directory)
+      - glove_based/assets/         (entire directory)
+      - glove_based/setup.py
+      - glove_based/manus_mocap.py
+      - glove_based/geort_replay_evaluation.py
+      - glove_based/geort_realtime_evaluation.py
+
+    See the THIRD-PARTY section below and the NOTICE file for details
+    of which files are unmodified and which have been modified.
+
+The MIT grant in section (A) does not, and cannot, remove the
+NonCommercial restriction that applies to the files in section (B).
+
+
+==========================================================
+(A) MIT LICENSE
+==========================================================
+
 MIT License
 
 Copyright (c) 2025 Wonik Robotics
 Additional Contributions Copyright (c) 2025 Jungyeon Lee
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the “Software”), to deal
+of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
@@ -13,7 +46,7 @@ furnished to do so, subject to the following conditions:
 The above copyright notices and this permission notice shall be included in
 all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
 IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
@@ -22,48 +55,71 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE
 OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-----------------------------------------------------------
-ACKNOWLEDGMENTS AND THIRD-PARTY LICENSE NOTICE
-----------------------------------------------------------
+==========================================================
+THIRD-PARTY SOFTWARE AND ACKNOWLEDGMENTS
+==========================================================
 
-This project references and builds upon ideas, APIs, and documentation from
-the following third-party software projects. Their code or models may be
-subject to different licenses. Please review the respective terms if you
-plan to use or redistribute those components.
-
-1. Manus Meta ROS2 SDK (Motion Capture Device Integration)
-   URL: https://docs.manus-meta.com/3.0.0/Plugins/SDK/ROS2/getting%20started/
-   License: Proprietary (Manus Meta)
-   Note: Used for reference when integrating Manus motion capture devices.
-
-2. GeoRT Retargeting Framework (AI-based Hand Retargeting)
-   License: Creative Commons CC-BY-NC 4.0
-   Copyright (c) UC Berkeley and Meta Platforms, Inc.
-   URL: https://github.com/facebookresearch/GeoRT
-
-   IMPORTANT: The GeoRT code and model weights are licensed under CC-BY-NC.
-   This license prohibits commercial use.
-
+1. GeoRT — Geometric Retargeting
+   Copyright (c) UC Berkeley and Meta Platforms, Inc. and affiliates.
+   License: Creative Commons Attribution-NonCommercial 4.0 International
+            (CC BY-NC 4.0)
+   Repository:   https://github.com/facebookresearch/GeoRT
+   Project page: https://zhaohengyin.github.io/geort/
+   Paper:        Z.-H. Yin et al., "Geometric Retargeting: A Principled,
+                 Ultrafast Neural Hand Retargeting Algorithm",
+                 arXiv:2503.07541
    Full license: https://creativecommons.org/licenses/by-nc/4.0/
 
-3. DexSuite / Dex-Retargeting (Vision-Based Retargeting)
-   Author: Yuzhe Qin
-   License: MIT License (MIT)
-   URL: https://github.com/dexsuite/dex-retargeting
+   STATUS: GeoRT source code, configuration files, and robot assets are
+   INCLUDED IN THIS REPOSITORY, both unmodified and in modified form.
+   These files remain licensed under CC BY-NC 4.0 and MAY NOT BE USED
+   FOR COMMERCIAL PURPOSES without separate permission from the original
+   authors. Modifications made by Wonik Robotics are documented in the
+   NOTICE file.
 
-   This repository contains MIT-licensed code. Portions of the design concepts
-   are referenced in this project.
+2. DexSuite / dex-retargeting — Vision-Based Retargeting
+   Copyright (c) 2023 Yuzhe Qin
+   License: MIT License
+   Repository: https://github.com/dexsuite/dex-retargeting
+
+   STATUS: No source code from this project is included in this
+   repository. It is referenced for design concepts only.
+
+3. MANUS Core 3 SDK / MANUS ROS2 Plugin
+   Copyright (c) Manus Meta
+   License: Proprietary
+   Documentation:
+     https://docs.manus-meta.com/3.0.0/Plugins/SDK/ROS2/getting%20started/
+
+   STATUS: Not included or redistributed. Users must obtain and install
+   the SDK directly from Manus Meta under their own license terms.
+
+4. allegro_hand_ros2 — Allegro Hand ROS2 Controller
+   Copyright (c) Wonik Robotics
+   License: BSD (as declared in the package.xml manifests)
+   Repository: https://github.com/Wonikrobotics-git/allegro_hand_ros2
+
+   STATUS: Runtime dependency. Not included in this repository.
 
 
-----------------------------------------------------------
+==========================================================
 NOTE ON LICENSE COMPATIBILITY
-----------------------------------------------------------
+==========================================================
 
-This project itself is released under the MIT License.
+MIT and CC BY-NC 4.0 are not compatible in the sense that a combined
+work cannot be redistributed under MIT alone. This repository therefore
+keeps the two licenses separate by path, as described in the SCOPE
+section above.
 
-However, components or research ideas referenced from CC-BY-NC sources
-(e.g., GeoRT) cannot be used for commercial purposes unless separately
-licensed from their original authors.
+Practical consequence for users:
 
-Users of this repository are responsible for ensuring compliance with any
-third-party licenses when using or redistributing derivative work.
+  - Files under section (A) may be used commercially under MIT terms.
+  - Files under section (B), and any work derived from them, are
+    restricted to non-commercial use under CC BY-NC 4.0.
+  - The glove-based GeoRT retargeting pipeline depends on section (B)
+    files. Running or deploying that pipeline for commercial purposes
+    requires a separate license from UC Berkeley and Meta Platforms.
+
+Users of this repository are responsible for ensuring compliance with
+all applicable third-party license terms when using, modifying, or
+redistributing this software or any derivative work.
