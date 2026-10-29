@@ -15,24 +15,45 @@ The core feature is **hand retargeting**, which converts glove-based or vision-b
 
 This project operates based on the official controller:
 
-### 👉 [WonikRobotics-git/allegro_hand_ros2](https://github.com/WonikRobotics-git/allegro_hand_ros2)
+### 👉 [Wonikrobotics-git/allegro_hand_ros2_v4](https://github.com/Wonikrobotics-git/allegro_hand_ros2_v4)
 
-Make sure to set up the Allegro Hand ROS2 controller before using this teleoperation code.
+Use the [`humble` release](https://github.com/Wonikrobotics-git/allegro_hand_ros2_v4/releases/tag/humble)
+of the V4 controller with Ubuntu 22.04 and ROS 2 Humble. Set up and build the
+controller before using this teleoperation code. Repository access is required
+while the controller repository is private.
+
+The repository name is `allegro_hand_ros2_v4`; ROS package names remain
+unchanged, including `allegro_hand_bringup` and the `allegro_hand_ros2` metapackage.
 
 ### Setup Instructions
 
 ```bash
-# Build the package
-colcon build --packages-select allegro_hand_ros2
+# Clone the Humble controller and build its packages
+source /opt/ros/humble/setup.bash
+mkdir -p ~/allegro_hand_v4_ws/src
+cd ~/allegro_hand_v4_ws/src
+git clone --branch humble https://github.com/Wonikrobotics-git/allegro_hand_ros2_v4.git
+cd ~/allegro_hand_v4_ws
+rosdep install --from-paths src --ignore-src -r -y
+colcon build --symlink-install
 
 # Source the workspace
 source install/setup.bash
+```
 
-# CAN setup
-./start_one_hand.sh              # For single hand
-./start_two_hands.sh             # For dual-hand setup
+See the [V4 user guide](https://github.com/Wonikrobotics-git/allegro_hand_ros2_v4/blob/main/allegro_hand_bringup/getting_started_v4.md)
+for detailed hardware setup. From this teleoperation repository, configure CAN
+for your hand setup:
 
-# Run the controller
+```bash
+bash start_one_hand.bash         # For single hand
+bash start_two_hands.bash        # For dual-hand setup
+```
+
+Then launch the controller from a terminal sourced with
+`~/allegro_hand_v4_ws/install/setup.bash`:
+
+```bash
 ros2 launch allegro_hand_bringup allegro_hand.launch.py      # Single hand
 ros2 launch allegro_hand_bringup allegro_hand_duo.launch.py  # Dual hands
 ```

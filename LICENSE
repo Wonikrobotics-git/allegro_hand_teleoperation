@@ -97,7 +97,7 @@ THIRD-PARTY SOFTWARE AND ACKNOWLEDGMENTS
 4. allegro_hand_ros2 — Allegro Hand ROS2 Controller
    Copyright (c) Wonik Robotics
    License: BSD (as declared in the package.xml manifests)
-   Repository: https://github.com/Wonikrobotics-git/allegro_hand_ros2
+   Repository: https://github.com/Wonikrobotics-git/allegro_hand_ros2_v4
 
    STATUS: Runtime dependency. Not included in this repository.
 

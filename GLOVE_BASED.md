@@ -625,10 +625,10 @@ The deployment pipeline consists of:
 
 **Configure PD Gains:**
 
-Before launching the controller, configure the PD gains for optimal performance with this deployment. Edit the PD gains configuration file in your `allegro_hand_ros2` workspace:
+Before launching the controller, configure the PD gains for optimal performance with this deployment. Edit the PD gains configuration file in your V4 controller workspace (using the `humble` tag from `allegro_hand_ros2_v4`):
 
 ```yaml
-# File: allegro_hand_ros2/allegro_hand_hardwares/v4/description/config/pd_gains.yaml
+# File: ~/allegro_hand_v4_ws/src/allegro_hand_ros2_v4/allegro_hand_hardwares/v4/description/config/pd_gains.yaml
 p_gains:
   joint00: 1.5
   ...
@@ -639,7 +639,7 @@ d_gain:
   joint33: 0.1024
 ```
 
-Reference configuration: [pd_gains.yaml](https://github.com/Wonikrobotics-git/allegro_hand_ros2/blob/main/allegro_hand_hardwares/v4/description/config/pd_gains.yaml)
+Reference configuration: [pd_gains.yaml](https://github.com/Wonikrobotics-git/allegro_hand_ros2_v4/blob/humble/allegro_hand_hardwares/v4/description/config/pd_gains.yaml)
 
 **Setup**
 
@@ -652,7 +652,7 @@ conda activate geort
 python glove_based/manus_skeleton_21.py
 
 # Terminal 3: Launch Allegro hand controller
-cd allegro_hand_ros2
+cd ~/allegro_hand_v4_ws
 source install/setup.bash
 
 # For single hand
